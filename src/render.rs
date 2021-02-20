@@ -4,18 +4,18 @@ use crate::sprite::SpriteSheet;
 use std::borrow::Borrow;
 use crate::Player;
 
-pub fn render_player(canvas: &mut WindowCanvas, player:&Player) -> Result<(), String> {
+pub fn render_player(canvas: &mut WindowCanvas, player: &Player) -> Result<(), String> {
     render_from_sprite_sheet(canvas,
                              player.position,
                              player.sprite.borrow(),
-                             player.frame)
+                             player.get_player_frame())
 }
 
 pub fn render_from_sprite_sheet(canvas: &mut WindowCanvas, position: Point, sprite_sheet: &SpriteSheet, frame: u32) -> Result<(), String> {
     render_sprite(canvas,
-           sprite_sheet.texture.borrow(),
-           position,
-           sprite_sheet.frames[frame as usize])
+                  sprite_sheet.texture.borrow(),
+                  position,
+                  sprite_sheet.frames[frame as usize])
 }
 
 /// Renders a section of a texture defined by sprite: Rect

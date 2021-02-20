@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use sdl2::event::Event;
 use sdl2::image::{LoadTexture};
@@ -6,17 +6,20 @@ use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 
-use crate::sprite::{sprite_sheet_factory, SpriteSheet};
+use crate::sprite::sprite_sheet_factory;
 use crate::render::render_player;
+use sdl2::EventPump;
+use crate::player::Player;
+use crate::directions::{TrunDirection, MoveDirection};
+use std::ops::Sub;
 
 mod render;
 mod sprite;
+mod player;
+mod directions;
+//mod keyboard;
 
-pub struct Player<'r> {
-    pub position: Point,
-    pub sprite: SpriteSheet<'r>,
-    pub frame: u32,
-}
+static mut RUNNING: bool = true;
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -37,30 +40,68 @@ fn main() -> Result<(), String> {
     let mut player = Player {
         position: Point::new(0, 0),
         sprite: sprite_sheet_factory(Rect::new(0, 0, 64, 64), texture),
-        frame: 0,
+        speed: 0,
+        acceleration: 2,
+        max_speed: 200,
+        turn: TrunDirection::None,
+        movement: MoveDirection::Stopped,
     };
+
     let mut event_pump = sdl_context.event_pump()?;
-    'running: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => { break 'running;},
-                Event::KeyDown { keycode: Some(Keycode::A), .. } => { player.frame +=1;println!("{}",player.frame)},
-                Event::KeyDown { keycode: Some(Keycode::D), .. } => { player.frame -=1;println!("{}",player.frame)},
-                _ => {}
-            }
+    unsafe {
+        while RUNNING {
+            input_event_handler(&mut event_pump, &mut player);
+            //update
+            update_player(&mut player);
+            //render
+            canvas.set_draw_color(Color::RGB(0, 180, 255));
+            canvas.clear();
+
+            render_player(&mut canvas, &player);
+
+            canvas.present();
+            println!("{}",player);
+
+            ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
-        //update
-
-        //render
-        canvas.set_draw_color(Color::RGB(0, 180, 255));
-        canvas.clear();
-
-        render_player(&mut canvas, &player);
-
-        canvas.present();
-
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 
     Ok(())
+}
+
+fn update_player(player: &mut Player) {
+    if MoveDirection::Forward == player.movement {
+        if player.speed < player.max_speed{
+            player.speed += player.acceleration
+        }else{
+            player.speed = player.speed
+        }
+    }
+    if MoveDirection::Break == player.movement {
+        if player.speed > 0{
+            player.speed -= 1
+        }else{
+            player.speed = 0
+        }
+    }
+}
+
+fn input_event_handler(event_pump: &mut EventPump, mut player: &mut Player) {
+    for event in event_pump.poll_iter() {
+        match event {
+            Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => unsafe { RUNNING = false },
+
+            Event::KeyDown { keycode: Some(Keycode::A), repeat: false, .. } => { player.turn = TrunDirection::Left; }
+            Event::KeyDown { keycode: Some(Keycode::D), repeat: false, .. } => { player.turn = TrunDirection::Right; }
+            Event::KeyUp { keycode: Some(Keycode::A), repeat: false, .. } => { player.turn = TrunDirection::None; }
+            Event::KeyUp { keycode: Some(Keycode::D), repeat: false, .. } => { player.turn = TrunDirection::None; }
+
+            Event::KeyDown { keycode: Some(Keycode::W), repeat: false, .. } => { player.movement = MoveDirection::Forward; }
+            Event::KeyDown { keycode: Some(Keycode::S), repeat: false, .. } => { player.movement = MoveDirection::Break; }
+            Event::KeyUp { keycode: Some(Keycode::W), repeat: false, .. } => { player.movement = MoveDirection::Break; }
+            Event::KeyUp { keycode: Some(Keycode::S), repeat: false, .. } => { player.movement = MoveDirection::Break; }
+
+            _ => {}
+        }
+    }
 }
