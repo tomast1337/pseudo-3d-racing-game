@@ -11,7 +11,7 @@ use crate::render::render_player;
 use sdl2::EventPump;
 use crate::player::Player;
 use crate::directions::{TrunDirection, MoveDirection};
-use std::ops::Sub;
+use std::ops::{Sub, Add};
 
 mod render;
 mod sprite;
@@ -38,13 +38,14 @@ fn main() -> Result<(), String> {
 
     let texture = texture_creator.load_texture("assets/textures/Player.png")?;
     let mut player = Player {
-        position: Point::new(0, 0),
+        position: Point::new(0, 150),
         sprite: sprite_sheet_factory(Rect::new(0, 0, 64, 64), texture),
         speed: 0,
         acceleration: 2,
         max_speed: 200,
         turn: TrunDirection::None,
         movement: MoveDirection::Stopped,
+        horizontal_speed: 5,
     };
 
     let mut event_pump = sdl_context.event_pump()?;
@@ -60,7 +61,7 @@ fn main() -> Result<(), String> {
             render_player(&mut canvas, &player);
 
             canvas.present();
-            println!("{}",player);
+            println!("{}", player);
 
             ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
@@ -71,18 +72,32 @@ fn main() -> Result<(), String> {
 
 fn update_player(player: &mut Player) {
     if MoveDirection::Forward == player.movement {
-        if player.speed < player.max_speed{
+        if player.speed < player.max_speed {
             player.speed += player.acceleration
-        }else{
+        } else {
             player.speed = player.speed
         }
     }
+
     if MoveDirection::Break == player.movement {
-        if player.speed > 0{
+        if player.speed > 0 {
             player.speed -= 1
-        }else{
+        } else {
             player.speed = 0
         }
+    }
+    match player.turn {
+        TrunDirection::Right => {
+            if player.position.x() <= 350 {
+                player.position = player.position.offset(player.horizontal_speed, 0)
+            }
+        }
+        TrunDirection::Left => {
+            if player.position.x() >= -350 {
+                player.position = player.position.offset(-player.horizontal_speed, 0)
+            }
+        }
+        TrunDirection::None => {}
     }
 }
 

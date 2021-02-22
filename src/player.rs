@@ -10,6 +10,7 @@ pub struct Player<'r> {
     pub acceleration: i32,
     pub turn: TrunDirection,
     pub movement: MoveDirection,
+    pub horizontal_speed: i32,
 }
 
 impl Player<'_> {
@@ -40,6 +41,6 @@ impl Player<'_> {
 
 impl std::fmt::Display for Player<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({:?}, {:?},{},{:?})", self.movement, self.turn, self.speed,self.position)
+        write!(f, "({:?}, {:?},{},{:?})", self.movement, self.turn, self.speed, self.position)
     }
 }
