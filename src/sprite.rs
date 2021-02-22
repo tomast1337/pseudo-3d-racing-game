@@ -1,21 +1,23 @@
-use sdl2::rect::Rect;
-use sdl2::render::Texture;
+use tetra::graphics::{Texture, Rectangle};
+use tetra::math::Vec2;
 
-pub struct SpriteSheet<'r>{
-    pub frames:Vec<Rect>,
-    pub texture:Texture<'r>,
+pub struct SpriteSheet{
+    pub frames:Vec<Rectangle>,
+    pub texture: Texture,
 }
-/// Generates a Sprite Sheet, wont work if tiles size are not divisible by texture size
-pub fn sprite_sheet_factory(tile_size:Rect, texture:Texture) -> SpriteSheet {
-    let (width, height) = (texture.query().width, texture.query().height);
-    if width %tile_size.width()!=0 && height %tile_size.height()!=0 { panic!("The tiles wont fit") }
+impl SpriteSheet {
+    pub fn new(tile_size:Vec2<i32>,texture:Texture) -> SpriteSheet{
+        if texture.width() % tile_size.x!=0 && texture.height() % tile_size.y!=0 { panic!("The tiles wont fit") }
 
-    let mut frames:Vec<Rect> = Vec::new();
-    for i  in (0..height as i32).step_by(tile_size.height() as usize){
-        for j in (0..width as i32).step_by(tile_size.width() as usize){
-            frames.push(Rect::new(j,i,tile_size.width(),tile_size.height()))
+        let mut frames:Vec<Rectangle> = Vec::new();
+        for i in (0..texture.height()).step_by(tile_size.y as usize){
+            for j in (0..texture.width()).step_by(tile_size.x as usize){
+                frames.push(Rectangle::new(j as f32,i as f32,tile_size.x as f32,tile_size.y as f32))
+            }
+        }
+        SpriteSheet{
+            frames,
+            texture,
         }
     }
-
-    SpriteSheet {frames,texture,}
 }

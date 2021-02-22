@@ -2,7 +2,6 @@
 pub enum MoveDirection {
     Forward,
     Break,
-    Stopped,
 }
 
 #[derive(PartialEq, Debug)]
