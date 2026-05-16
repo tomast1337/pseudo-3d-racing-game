@@ -2,9 +2,12 @@
 name = "outrun_clone"
 version = "0.1.0"
 authors = ["Tomast1337 <vycasnicolas@gmail.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2021"
 
 [dependencies]
-tetra = "0.6"
+winit = "0.30"
+glutin = "0.32"
+glutin-winit = "0.5"
+glow = "0.16"
+image = { version = "0.25", default-features = false, features = ["png"] }
+bytemuck = { version = "1", features = ["derive"] }

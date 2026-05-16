@@ -1,11 +1,12 @@
 #[derive(PartialEq, Debug)]
 pub enum MoveDirection {
     Forward,
-    Break,
+    Brake,
+    Coast,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum TrunDirection {
+pub enum TurnDirection {
     Left,
     Right,
     None,
