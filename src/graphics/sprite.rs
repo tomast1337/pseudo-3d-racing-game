@@ -8,12 +8,25 @@ pub struct UvRect {
 }
 
 impl UvRect {
+    /// Full layer UVs matching PNG orientation (row 0 = top of image).
     pub const FULL: Self = Self {
         u0: 0.0,
         v0: 0.0,
         u1: 1.0,
         v1: 1.0,
     };
+
+    /// One horizontal row in a 128px-tall road depth texture.
+    pub fn road_row(row: f32, scroll: f32, rows: f32) -> Self {
+        let v = ((scroll * rows) + row).fract();
+        let half = 0.5 / rows;
+        Self {
+            u0: 0.0,
+            v0: v,
+            u1: 1.0,
+            v1: (v + 2.0 * half).min(1.0),
+        }
+    }
 }
 
 /// Metadata for a sprite stored in a texture array layer (may be padded).

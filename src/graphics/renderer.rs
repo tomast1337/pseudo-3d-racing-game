@@ -1,8 +1,8 @@
-use super::shader::{ShaderProgram, TexturedArrayShader, TexturedShader};
+use super::shader::{RoadArrayShader, ShaderProgram, TexturedArrayShader, TexturedShader};
 use super::sprite::UvRect;
 use super::texture::GlTexture;
 use super::texture_array::Texture2DArray;
-use super::vertex::{ColoredVertex, TexturedVertex};
+use super::vertex::{ColoredVertex, RoadVertex, TexturedVertex};
 use bytemuck;
 use glow::Context;
 use glow::HasContext;
@@ -36,10 +36,13 @@ pub struct Renderer {
     colored_shader: ShaderProgram,
     textured_shader: TexturedShader,
     textured_array_shader: TexturedArrayShader,
+    road_array_shader: RoadArrayShader,
     colored_vao: glow::VertexArray,
     colored_vbo: glow::Buffer,
     textured_vao: glow::VertexArray,
     textured_vbo: glow::Buffer,
+    road_vao: glow::VertexArray,
+    road_vbo: glow::Buffer,
 }
 
 impl Renderer {
@@ -59,6 +62,11 @@ impl Renderer {
             gl,
             include_str!("shaders/textured.vert"),
             include_str!("shaders/textured_array.frag"),
+        );
+        let road_array_shader = RoadArrayShader::new(
+            gl,
+            include_str!("shaders/road_array.vert"),
+            include_str!("shaders/road_array.frag"),
         );
 
         let colored_vao = gl.create_vertex_array().expect("colored vao");
@@ -81,6 +89,21 @@ impl Renderer {
         gl.vertex_attrib_pointer_f32(1, 2, glow::FLOAT, false, 16, 8);
         gl.bind_vertex_array(None);
 
+        let road_vao = gl.create_vertex_array().expect("road vao");
+        let road_vbo = gl.create_buffer().expect("road vbo");
+        gl.bind_vertex_array(Some(road_vao));
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(road_vbo));
+        let road_stride = std::mem::size_of::<RoadVertex>() as i32;
+        gl.enable_vertex_attrib_array(0);
+        gl.vertex_attrib_pointer_f32(0, 2, glow::FLOAT, false, road_stride, 0);
+        gl.enable_vertex_attrib_array(1);
+        gl.vertex_attrib_pointer_f32(1, 1, glow::FLOAT, false, road_stride, 8);
+        gl.enable_vertex_attrib_array(2);
+        gl.vertex_attrib_pointer_f32(2, 1, glow::FLOAT, false, road_stride, 12);
+        gl.enable_vertex_attrib_array(3);
+        gl.vertex_attrib_pointer_f32(3, 1, glow::FLOAT, false, road_stride, 16);
+        gl.bind_vertex_array(None);
+
         gl.enable(glow::BLEND);
         gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
 
@@ -92,10 +115,13 @@ impl Renderer {
             colored_shader,
             textured_shader,
             textured_array_shader,
+            road_array_shader,
             colored_vao,
             colored_vbo,
             textured_vao,
             textured_vbo,
+            road_vao,
+            road_vbo,
         }
     }
 
@@ -176,32 +202,7 @@ impl Renderer {
         let top = center_y - half_h;
         let bottom = center_y + half_h;
 
-        let vertices = [
-            TexturedVertex {
-                position: [left, top],
-                uv: [uv.u0, uv.v1],
-            },
-            TexturedVertex {
-                position: [right, top],
-                uv: [uv.u1, uv.v1],
-            },
-            TexturedVertex {
-                position: [right, bottom],
-                uv: [uv.u1, uv.v0],
-            },
-            TexturedVertex {
-                position: [left, top],
-                uv: [uv.u0, uv.v1],
-            },
-            TexturedVertex {
-                position: [right, bottom],
-                uv: [uv.u1, uv.v0],
-            },
-            TexturedVertex {
-                position: [left, bottom],
-                uv: [uv.u0, uv.v0],
-            },
-        ];
+        let vertices = screen_quad_vertices(left, top, right, bottom, uv);
 
         gl.use_program(Some(self.textured_shader.program));
         self.textured_shader.set_projection(gl, &self.projection);
@@ -230,32 +231,7 @@ impl Renderer {
         h: f32,
         uv: UvRect,
     ) {
-        let vertices = [
-            TexturedVertex {
-                position: [x, y],
-                uv: [uv.u0, uv.v1],
-            },
-            TexturedVertex {
-                position: [x + w, y],
-                uv: [uv.u1, uv.v1],
-            },
-            TexturedVertex {
-                position: [x + w, y + h],
-                uv: [uv.u1, uv.v0],
-            },
-            TexturedVertex {
-                position: [x, y],
-                uv: [uv.u0, uv.v1],
-            },
-            TexturedVertex {
-                position: [x + w, y + h],
-                uv: [uv.u1, uv.v0],
-            },
-            TexturedVertex {
-                position: [x, y + h],
-                uv: [uv.u0, uv.v0],
-            },
-        ];
+        let vertices = screen_quad_vertices(x, y, x + w, y + h, uv);
 
         gl.use_program(Some(self.textured_array_shader.program));
         self.textured_array_shader
@@ -273,4 +249,106 @@ impl Renderer {
         gl.bind_vertex_array(None);
         gl.bind_texture(glow::TEXTURE_2D_ARRAY, None);
     }
+
+    pub unsafe fn draw_textured_array_mesh(
+        &self,
+        gl: &Context,
+        texture: &Texture2DArray,
+        layer: i32,
+        vertices: &[TexturedVertex],
+    ) {
+        if vertices.is_empty() {
+            return;
+        }
+
+        gl.use_program(Some(self.textured_array_shader.program));
+        self.textured_array_shader
+            .set_projection(gl, &self.projection);
+        texture.bind(gl, 0);
+        self.textured_array_shader.bind_texture(gl, 0, layer);
+        gl.bind_vertex_array(Some(self.textured_vao));
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.textured_vbo));
+        gl.buffer_data_u8_slice(
+            glow::ARRAY_BUFFER,
+            bytemuck::cast_slice(vertices),
+            glow::DYNAMIC_DRAW,
+        );
+        gl.draw_arrays(glow::TRIANGLES, 0, vertices.len() as i32);
+        gl.bind_vertex_array(None);
+        gl.bind_texture(glow::TEXTURE_2D_ARRAY, None);
+    }
+
+    /// Road mesh with horizontal edge-pixel extension (see `road_array.frag`).
+    pub unsafe fn draw_road_mesh(
+        &self,
+        gl: &Context,
+        texture: &Texture2DArray,
+        layer: i32,
+        vertices: &[RoadVertex],
+        shift: f32,
+        tex_inner_lo: f32,
+        tex_inner_hi: f32,
+    ) {
+        if vertices.is_empty() {
+            return;
+        }
+
+        self.road_array_shader.set_projection(gl, &self.projection);
+        texture.bind(gl, 0);
+        self.road_array_shader.bind_draw(
+            gl,
+            0,
+            layer,
+            self.width,
+            shift,
+            tex_inner_lo,
+            tex_inner_hi,
+        );
+        gl.bind_vertex_array(Some(self.road_vao));
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.road_vbo));
+        gl.buffer_data_u8_slice(
+            glow::ARRAY_BUFFER,
+            bytemuck::cast_slice(vertices),
+            glow::DYNAMIC_DRAW,
+        );
+        gl.draw_arrays(glow::TRIANGLES, 0, vertices.len() as i32);
+        gl.bind_vertex_array(None);
+        gl.bind_texture(glow::TEXTURE_2D_ARRAY, None);
+    }
+}
+
+/// Screen quad with PNG-correct UVs (image row 0 at screen top).
+fn screen_quad_vertices(
+    left: f32,
+    top: f32,
+    right: f32,
+    bottom: f32,
+    uv: UvRect,
+) -> [TexturedVertex; 6] {
+    [
+        TexturedVertex {
+            position: [left, top],
+            uv: [uv.u0, uv.v0],
+        },
+        TexturedVertex {
+            position: [right, top],
+            uv: [uv.u1, uv.v0],
+        },
+        TexturedVertex {
+            position: [right, bottom],
+            uv: [uv.u1, uv.v1],
+        },
+        TexturedVertex {
+            position: [left, top],
+            uv: [uv.u0, uv.v0],
+        },
+        TexturedVertex {
+            position: [right, bottom],
+            uv: [uv.u1, uv.v1],
+        },
+        TexturedVertex {
+            position: [left, bottom],
+            uv: [uv.u0, uv.v1],
+        },
+    ]
 }

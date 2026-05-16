@@ -4,6 +4,7 @@ mod graphics;
 mod math;
 mod player;
 mod render;
+mod road;
 
 use assets::{Assets, Biome};
 use directions::{MoveDirection, TurnDirection};
@@ -208,7 +209,7 @@ impl App {
         self.update_input();
         if let Some(player) = self.player.as_mut() {
             player.update_player(dt);
-            self.road_scroll += player.speed * dt * 0.001;
+            self.road_scroll += player.speed * dt * 0.02;
         }
 
         if let (Some(gl_state), Some(player)) = (&self.gl_state, &self.player) {
