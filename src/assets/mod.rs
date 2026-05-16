@@ -5,9 +5,7 @@ mod embedded;
 pub mod ids;
 
 pub use biome::{Biome, BiomeCatalog};
-pub use ids::{
-    AssetId, RoadId, SkyId, CAR_FRAME_HEIGHT, CAR_FRAME_WIDTH,
-};
+pub use ids::{AssetId, RoadId, SkyId, CAR_FRAME_HEIGHT, CAR_FRAME_WIDTH};
 
 use crate::graphics::{SpriteRegion, Texture2DArray};
 use glow::Context;

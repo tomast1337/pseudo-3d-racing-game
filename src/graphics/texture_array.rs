@@ -1,5 +1,5 @@
-use glow::HasContext;
 use glow::Context;
+use glow::HasContext;
 use image::RgbaImage;
 
 pub struct Texture2DArray {

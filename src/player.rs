@@ -1,4 +1,4 @@
-use crate::assets::{CAR_FRAME_HEIGHT, CAR_FRAME_WIDTH};
+use crate::assets::CAR_FRAME_WIDTH;
 use crate::directions::{MoveDirection, TurnDirection};
 use crate::math::Vec2;
 use crate::render::horizon_y;
@@ -19,14 +19,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(
-        position: Vec2,
-        max_speed: f32,
-        acceleration: f32,
-        horizontal_speed: f32,
-        screen_width: f32,
-        screen_height: f32,
-    ) -> Player {
+    pub fn new(position: Vec2, max_speed: f32, acceleration: f32, horizontal_speed: f32, screen_width: f32, screen_height: f32) -> Player {
         Player {
             position,
             speed: 0.0,
@@ -97,14 +90,12 @@ impl Player {
             match self.turn {
                 TurnDirection::Right => {
                     if self.position.x < max_x {
-                        self.position.x =
-                            (self.position.x + self.horizontal_speed * dt).min(max_x);
+                        self.position.x = (self.position.x + self.horizontal_speed * dt).min(max_x);
                     }
                 }
                 TurnDirection::Left => {
                     if self.position.x > min_x {
-                        self.position.x =
-                            (self.position.x - self.horizontal_speed * dt).max(min_x);
+                        self.position.x = (self.position.x - self.horizontal_speed * dt).max(min_x);
                     }
                 }
                 TurnDirection::None => {}

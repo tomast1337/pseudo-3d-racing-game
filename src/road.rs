@@ -63,12 +63,7 @@ pub fn screen_y_to_depth(screen_y: f32, horizon: f32, ground_h: f32) -> f32 {
 }
 
 /// Drivable X range for the car center at a given screen Y (matches road width there).
-pub fn lateral_bounds_at_y(
-    screen_y: f32,
-    screen_w: f32,
-    screen_h: f32,
-    horizon: f32,
-) -> (f32, f32) {
+pub fn lateral_bounds_at_y(screen_y: f32, screen_w: f32, screen_h: f32, horizon: f32) -> (f32, f32) {
     let ground_h = screen_h - horizon;
     let depth = screen_y_to_depth(screen_y, horizon, ground_h);
     let half_road = depth_to_half_width(depth, screen_w);
@@ -90,18 +85,7 @@ fn screen_clip_bounds(half_w: f32, screen_w: f32, center_x: f32) -> (f32, f32) {
     (lo, hi)
 }
 
-fn push_road_trapezoid(
-    out: &mut Vec<RoadVertex>,
-    screen_w: f32,
-    y_top: f32,
-    y_bottom: f32,
-    clip_lo_top: f32,
-    clip_hi_top: f32,
-    clip_lo_bot: f32,
-    clip_hi_bot: f32,
-    v_top: f32,
-    v_bottom: f32,
-) {
+fn push_road_trapezoid(out: &mut Vec<RoadVertex>, screen_w: f32, y_top: f32, y_bottom: f32, clip_lo_top: f32, clip_hi_top: f32, clip_lo_bot: f32, clip_hi_bot: f32, v_top: f32, v_bottom: f32) {
     let left = 0.0;
     let right = screen_w;
 
@@ -145,15 +129,7 @@ fn push_road_trapezoid(
     ]);
 }
 
-pub unsafe fn draw_road(
-    gl: &Context,
-    renderer: &Renderer,
-    assets: &Assets,
-    road: RoadId,
-    scroll: f32,
-    player: &Player,
-    horizon: f32,
-) {
+pub unsafe fn draw_road(gl: &Context, renderer: &Renderer, assets: &Assets, road: RoadId, scroll: f32, player: &Player, horizon: f32) {
     let screen_w = renderer.width;
     let ground_h = renderer.height - horizon;
     if ground_h <= 0.0 {

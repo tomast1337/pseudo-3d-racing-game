@@ -1,7 +1,7 @@
 use super::embedded::{self, SPRITE_ASSETS};
 use super::ids::{AssetId, RoadId, SkyId, CAR_FRAME_COUNT};
-use crate::graphics::{SpriteRegion, Texture2DArray};
 use crate::graphics::texture_array::{pad_to_canvas, split_horizontal_strip};
+use crate::graphics::{SpriteRegion, Texture2DArray};
 use glow::Context;
 use image::RgbaImage;
 use std::collections::HashMap;
@@ -21,10 +21,16 @@ fn decode(bytes: &[u8]) -> RgbaImage {
 }
 
 pub unsafe fn build(gl: &Context) -> BuiltAssets {
-    let sky_layers: Vec<RgbaImage> = SkyId::ALL.iter().map(|&id| decode(embedded::sky_bytes(id))).collect();
+    let sky_layers: Vec<RgbaImage> = SkyId::ALL
+        .iter()
+        .map(|&id| decode(embedded::sky_bytes(id)))
+        .collect();
     let skies = Texture2DArray::from_equal_layers(gl, &sky_layers);
 
-    let road_layers: Vec<RgbaImage> = RoadId::ALL.iter().map(|&id| decode(embedded::road_bytes(id))).collect();
+    let road_layers: Vec<RgbaImage> = RoadId::ALL
+        .iter()
+        .map(|&id| decode(embedded::road_bytes(id)))
+        .collect();
     let roads = Texture2DArray::from_equal_layers(gl, &road_layers);
 
     let mut max_w = 0u32;

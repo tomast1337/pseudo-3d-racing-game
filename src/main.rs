@@ -61,13 +61,12 @@ struct InputState {
 
 fn pick_gl_config(configs: Box<dyn Iterator<Item = Config> + '_>) -> Config {
     configs
-        .reduce(|accum, config| {
-            let transparency_check = config.supports_transparency().unwrap_or(false)
-                & !accum.supports_transparency().unwrap_or(false);
-            if transparency_check || config.num_samples() > accum.num_samples() {
+        .reduce(|acc, config| {
+            let transparency_check = config.supports_transparency().unwrap_or(false) & !acc.supports_transparency().unwrap_or(false);
+            if transparency_check || config.num_samples() > acc.num_samples() {
                 config
             } else {
-                accum
+                acc
             }
         })
         .expect("no GL config")
@@ -139,8 +138,7 @@ impl App {
         };
 
         let gl_context = gl_context.make_current(&gl_surface).unwrap();
-        let _ = gl_surface
-            .set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()));
+        let _ = gl_surface.set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()));
 
         let gl = unsafe {
             glow::Context::from_loader_function(|symbol| {
@@ -248,12 +246,7 @@ impl ApplicationHandler for App {
         }
     }
 
-    fn window_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
-        event: WindowEvent,
-    ) {
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) if size.width > 0 && size.height > 0 => {

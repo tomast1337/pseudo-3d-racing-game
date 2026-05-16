@@ -1,5 +1,5 @@
-use glow::HasContext;
 use glow::Context;
+use glow::HasContext;
 
 pub struct ShaderProgram {
     pub program: glow::Program,
@@ -7,12 +7,7 @@ pub struct ShaderProgram {
 }
 
 impl ShaderProgram {
-    pub unsafe fn new(
-        gl: &Context,
-        vertex_src: &str,
-        fragment_src: &str,
-        projection_uniform: &str,
-    ) -> Self {
+    pub unsafe fn new(gl: &Context, vertex_src: &str, fragment_src: &str, projection_uniform: &str) -> Self {
         let vertex_shader = compile_shader(gl, glow::VERTEX_SHADER, vertex_src);
         let fragment_shader = compile_shader(gl, glow::FRAGMENT_SHADER, fragment_src);
         let program = gl.create_program().expect("create program");
@@ -20,10 +15,7 @@ impl ShaderProgram {
         gl.attach_shader(program, fragment_shader);
         gl.link_program(program);
         if !gl.get_program_link_status(program) {
-            panic!(
-                "Program link error: {}",
-                gl.get_program_info_log(program)
-            );
+            panic!("Program link error: {}", gl.get_program_info_log(program));
         }
         gl.delete_shader(vertex_shader);
         gl.delete_shader(fragment_shader);
@@ -57,10 +49,7 @@ impl TexturedShader {
         gl.attach_shader(program, fragment_shader);
         gl.link_program(program);
         if !gl.get_program_link_status(program) {
-            panic!(
-                "Program link error: {}",
-                gl.get_program_info_log(program)
-            );
+            panic!("Program link error: {}", gl.get_program_info_log(program));
         }
         gl.delete_shader(vertex_shader);
         gl.delete_shader(fragment_shader);
@@ -104,10 +93,7 @@ impl TexturedArrayShader {
         gl.attach_shader(program, fragment_shader);
         gl.link_program(program);
         if !gl.get_program_link_status(program) {
-            panic!(
-                "Program link error: {}",
-                gl.get_program_info_log(program)
-            );
+            panic!("Program link error: {}", gl.get_program_info_log(program));
         }
         gl.delete_shader(vertex_shader);
         gl.delete_shader(fragment_shader);
@@ -160,10 +146,7 @@ impl RoadArrayShader {
         gl.attach_shader(program, fragment_shader);
         gl.link_program(program);
         if !gl.get_program_link_status(program) {
-            panic!(
-                "Program link error: {}",
-                gl.get_program_info_log(program)
-            );
+            panic!("Program link error: {}", gl.get_program_info_log(program));
         }
         gl.delete_shader(vertex_shader);
         gl.delete_shader(fragment_shader);
@@ -205,16 +188,7 @@ impl RoadArrayShader {
         gl.uniform_matrix_4_f32_slice(Some(&self.projection_location), false, matrix);
     }
 
-    pub unsafe fn bind_draw(
-        &self,
-        gl: &Context,
-        unit: i32,
-        layer: i32,
-        screen_width: f32,
-        shift: f32,
-        tex_inner_lo: f32,
-        tex_inner_hi: f32,
-    ) {
+    pub unsafe fn bind_draw(&self, gl: &Context, unit: i32, layer: i32, screen_width: f32, shift: f32, tex_inner_lo: f32, tex_inner_hi: f32) {
         gl.use_program(Some(self.program));
         gl.uniform_1_i32(Some(&self.texture_location), unit);
         gl.uniform_1_i32(Some(&self.layer_location), layer);

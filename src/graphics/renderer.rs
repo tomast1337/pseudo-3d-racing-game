@@ -10,22 +10,9 @@ use glow::HasContext;
 /// Screen-space orthographic projection: origin top-left, +y downward.
 pub fn ortho_projection(width: f32, height: f32) -> [f32; 16] {
     [
-        2.0 / width,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        -2.0 / height,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        -1.0,
-        0.0,
-        -1.0,
-        1.0,
-        0.0,
-        1.0,
+        2.0 / width, 0.0, 0.0, 0.0, 0.0,
+        -2.0 / height, 0.0, 0.0, 0.0, 0.0,
+        -1.0, 0.0, -1.0, 1.0, 0.0, 1.0,
     ]
 }
 
@@ -137,15 +124,7 @@ impl Renderer {
         gl.clear(glow::COLOR_BUFFER_BIT);
     }
 
-    pub unsafe fn draw_colored_rect(
-        &self,
-        gl: &Context,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        color: [f32; 4],
-    ) {
+    pub unsafe fn draw_colored_rect(&self, gl: &Context, x: f32, y: f32, w: f32, h: f32, color: [f32; 4]) {
         let vertices = [
             ColoredVertex {
                 position: [x, y],
@@ -185,16 +164,7 @@ impl Renderer {
         gl.bind_vertex_array(None);
     }
 
-    pub unsafe fn draw_textured_quad(
-        &self,
-        gl: &Context,
-        texture: &GlTexture,
-        center_x: f32,
-        center_y: f32,
-        width: f32,
-        height: f32,
-        uv: UvRect,
-    ) {
+    pub unsafe fn draw_textured_quad(&self, gl: &Context, texture: &GlTexture, center_x: f32, center_y: f32, width: f32, height: f32, uv: UvRect) {
         let half_w = width * 0.5;
         let half_h = height * 0.5;
         let left = center_x - half_w;
@@ -220,17 +190,7 @@ impl Renderer {
         gl.bind_texture(glow::TEXTURE_2D, None);
     }
 
-    pub unsafe fn draw_textured_array_quad(
-        &self,
-        gl: &Context,
-        texture: &Texture2DArray,
-        layer: i32,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        uv: UvRect,
-    ) {
+    pub unsafe fn draw_textured_array_quad(&self, gl: &Context, texture: &Texture2DArray, layer: i32, x: f32, y: f32, w: f32, h: f32, uv: UvRect) {
         let vertices = screen_quad_vertices(x, y, x + w, y + h, uv);
 
         gl.use_program(Some(self.textured_array_shader.program));
@@ -250,13 +210,7 @@ impl Renderer {
         gl.bind_texture(glow::TEXTURE_2D_ARRAY, None);
     }
 
-    pub unsafe fn draw_textured_array_mesh(
-        &self,
-        gl: &Context,
-        texture: &Texture2DArray,
-        layer: i32,
-        vertices: &[TexturedVertex],
-    ) {
+    pub unsafe fn draw_textured_array_mesh(&self, gl: &Context, texture: &Texture2DArray, layer: i32, vertices: &[TexturedVertex]) {
         if vertices.is_empty() {
             return;
         }
@@ -279,31 +233,15 @@ impl Renderer {
     }
 
     /// Road mesh with horizontal edge-pixel extension (see `road_array.frag`).
-    pub unsafe fn draw_road_mesh(
-        &self,
-        gl: &Context,
-        texture: &Texture2DArray,
-        layer: i32,
-        vertices: &[RoadVertex],
-        shift: f32,
-        tex_inner_lo: f32,
-        tex_inner_hi: f32,
-    ) {
+    pub unsafe fn draw_road_mesh(&self, gl: &Context, texture: &Texture2DArray, layer: i32, vertices: &[RoadVertex], shift: f32, tex_inner_lo: f32, tex_inner_hi: f32) {
         if vertices.is_empty() {
             return;
         }
 
         self.road_array_shader.set_projection(gl, &self.projection);
         texture.bind(gl, 0);
-        self.road_array_shader.bind_draw(
-            gl,
-            0,
-            layer,
-            self.width,
-            shift,
-            tex_inner_lo,
-            tex_inner_hi,
-        );
+        self.road_array_shader
+            .bind_draw(gl, 0, layer, self.width, shift, tex_inner_lo, tex_inner_hi);
         gl.bind_vertex_array(Some(self.road_vao));
         gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.road_vbo));
         gl.buffer_data_u8_slice(
@@ -318,13 +256,7 @@ impl Renderer {
 }
 
 /// Screen quad with PNG-correct UVs (image row 0 at screen top).
-fn screen_quad_vertices(
-    left: f32,
-    top: f32,
-    right: f32,
-    bottom: f32,
-    uv: UvRect,
-) -> [TexturedVertex; 6] {
+fn screen_quad_vertices(left: f32, top: f32, right: f32, bottom: f32, uv: UvRect) -> [TexturedVertex; 6] {
     [
         TexturedVertex {
             position: [left, top],
