@@ -1,6 +1,7 @@
-use super::shader::{ShaderProgram, TexturedShader};
+use super::shader::{ShaderProgram, TexturedArrayShader, TexturedShader};
 use super::sprite::UvRect;
 use super::texture::GlTexture;
+use super::texture_array::Texture2DArray;
 use super::vertex::{ColoredVertex, TexturedVertex};
 use bytemuck;
 use glow::Context;
@@ -34,6 +35,7 @@ pub struct Renderer {
     pub projection: [f32; 16],
     colored_shader: ShaderProgram,
     textured_shader: TexturedShader,
+    textured_array_shader: TexturedArrayShader,
     colored_vao: glow::VertexArray,
     colored_vbo: glow::Buffer,
     textured_vao: glow::VertexArray,
@@ -52,6 +54,11 @@ impl Renderer {
             gl,
             include_str!("shaders/textured.vert"),
             include_str!("shaders/textured.frag"),
+        );
+        let textured_array_shader = TexturedArrayShader::new(
+            gl,
+            include_str!("shaders/textured.vert"),
+            include_str!("shaders/textured_array.frag"),
         );
 
         let colored_vao = gl.create_vertex_array().expect("colored vao");
@@ -84,6 +91,7 @@ impl Renderer {
             projection,
             colored_shader,
             textured_shader,
+            textured_array_shader,
             colored_vao,
             colored_vbo,
             textured_vao,
@@ -209,5 +217,60 @@ impl Renderer {
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
         gl.bind_vertex_array(None);
         gl.bind_texture(glow::TEXTURE_2D, None);
+    }
+
+    pub unsafe fn draw_textured_array_quad(
+        &self,
+        gl: &Context,
+        texture: &Texture2DArray,
+        layer: i32,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        uv: UvRect,
+    ) {
+        let vertices = [
+            TexturedVertex {
+                position: [x, y],
+                uv: [uv.u0, uv.v1],
+            },
+            TexturedVertex {
+                position: [x + w, y],
+                uv: [uv.u1, uv.v1],
+            },
+            TexturedVertex {
+                position: [x + w, y + h],
+                uv: [uv.u1, uv.v0],
+            },
+            TexturedVertex {
+                position: [x, y],
+                uv: [uv.u0, uv.v1],
+            },
+            TexturedVertex {
+                position: [x + w, y + h],
+                uv: [uv.u1, uv.v0],
+            },
+            TexturedVertex {
+                position: [x, y + h],
+                uv: [uv.u0, uv.v0],
+            },
+        ];
+
+        gl.use_program(Some(self.textured_array_shader.program));
+        self.textured_array_shader
+            .set_projection(gl, &self.projection);
+        texture.bind(gl, 0);
+        self.textured_array_shader.bind_texture(gl, 0, layer);
+        gl.bind_vertex_array(Some(self.textured_vao));
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.textured_vbo));
+        gl.buffer_data_u8_slice(
+            glow::ARRAY_BUFFER,
+            bytemuck::cast_slice(&vertices),
+            glow::DYNAMIC_DRAW,
+        );
+        gl.draw_arrays(glow::TRIANGLES, 0, 6);
+        gl.bind_vertex_array(None);
+        gl.bind_texture(glow::TEXTURE_2D_ARRAY, None);
     }
 }

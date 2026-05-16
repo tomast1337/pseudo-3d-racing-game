@@ -5,7 +5,7 @@ mod math;
 mod player;
 mod render;
 
-use assets::Assets;
+use assets::{Assets, Biome};
 use directions::{MoveDirection, TurnDirection};
 use glow::HasContext;
 use graphics::Renderer;
@@ -43,6 +43,8 @@ struct App {
     gl_state: Option<GlState>,
     window: Option<Window>,
     player: Option<Player>,
+    biome: Biome,
+    road_scroll: f32,
     keys: InputState,
     last_frame: Instant,
     display_initialized: bool,
@@ -111,6 +113,8 @@ impl App {
             gl_state: None,
             window: None,
             player: None,
+            biome: Biome::Tropical,
+            road_scroll: 0.0,
             keys: InputState::default(),
             last_frame: Instant::now(),
             display_initialized: false,
@@ -152,7 +156,7 @@ impl App {
         let height = size.height.max(1) as f32;
 
         let renderer = unsafe { Renderer::new(&gl, width, height) };
-        let assets = unsafe { Assets::load(&gl).expect("load assets") };
+        let assets = unsafe { Assets::load(&gl) };
         let player = Player::new(
             math::Vec2::new(width / 2.0, height / 1.3),
             200.0,
@@ -204,6 +208,7 @@ impl App {
         self.update_input();
         if let Some(player) = self.player.as_mut() {
             player.update_player(dt);
+            self.road_scroll += player.speed * dt * 0.001;
         }
 
         if let (Some(gl_state), Some(player)) = (&self.gl_state, &self.player) {
@@ -213,6 +218,8 @@ impl App {
                     &gl_state.renderer,
                     &gl_state.assets,
                     player,
+                    self.biome,
+                    self.road_scroll,
                 );
             }
             let _ = gl_state.surface.swap_buffers(&gl_state.context);
@@ -273,9 +280,12 @@ impl ApplicationHandler for App {
                     PhysicalKey::Code(KeyCode::KeyA) => self.keys.a = pressed,
                     PhysicalKey::Code(KeyCode::KeyS) => self.keys.s = pressed,
                     PhysicalKey::Code(KeyCode::KeyD) => self.keys.d = pressed,
+                    PhysicalKey::Code(KeyCode::KeyB) if pressed => {
+                        self.biome = self.biome.next();
+                    }
                     PhysicalKey::Code(KeyCode::KeyP) if pressed => {
                         if let Some(player) = &self.player {
-                            println!("{player}");
+                            println!("{player} biome={:?}", self.biome);
                         }
                     }
                     PhysicalKey::Code(KeyCode::Escape) if pressed => event_loop.exit(),

@@ -7,6 +7,23 @@ pub struct UvRect {
     pub v1: f32,
 }
 
+impl UvRect {
+    pub const FULL: Self = Self {
+        u0: 0.0,
+        v0: 0.0,
+        u1: 1.0,
+        v1: 1.0,
+    };
+}
+
+/// Metadata for a sprite stored in a texture array layer (may be padded).
+#[derive(Clone, Copy, Debug)]
+pub struct SpriteRegion {
+    pub layer: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
 pub struct SpriteAtlas {
     pub frames: Vec<UvRect>,
     pub tile_size: u32,
@@ -43,5 +60,15 @@ impl SpriteAtlas {
             frames,
             tile_size: tile_width,
         }
+    }
+
+    /// Horizontal strip: frame 0 is leftmost in the image.
+    pub fn from_horizontal_strip(texture_width: u32, texture_height: u32, frame_count: u32) -> Self {
+        assert!(
+            texture_width % frame_count == 0,
+            "frame count {frame_count} does not divide width {texture_width}"
+        );
+        let frame_width = texture_width / frame_count;
+        Self::from_grid(texture_width, texture_height, frame_width, texture_height)
     }
 }

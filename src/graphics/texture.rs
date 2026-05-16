@@ -34,6 +34,11 @@ impl GlTexture {
         Self { id, width, height }
     }
 
+    pub unsafe fn from_bytes(gl: &Context, bytes: &[u8]) -> Result<Self, image::ImageError> {
+        let image = image::load_from_memory(bytes)?.into_rgba8();
+        Ok(Self::from_image(gl, &image))
+    }
+
     pub unsafe fn from_path(gl: &Context, path: impl AsRef<Path>) -> Result<Self, image::ImageError> {
         let image = image::open(path)?.into_rgba8();
         Ok(Self::from_image(gl, &image))

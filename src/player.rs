@@ -1,7 +1,7 @@
+use crate::assets::{CAR_FRAME_HEIGHT, CAR_FRAME_WIDTH};
 use crate::directions::{MoveDirection, TurnDirection};
 use crate::math::Vec2;
 
-pub const TILE_SIZE: f32 = 64.0;
 pub const PLAYER_SCALE: f32 = 3.0;
 
 pub struct Player {
@@ -35,6 +35,10 @@ impl Player {
         }
     }
 
+    fn half_car_width() -> f32 {
+        CAR_FRAME_WIDTH as f32 * PLAYER_SCALE * 0.5
+    }
+
     pub fn update_player(&mut self, dt: f32) {
         const BRAKE_RATE: f32 = 240.0;
         const COAST_RATE: f32 = 80.0;
@@ -63,7 +67,7 @@ impl Player {
             }
         }
 
-        let half_car = (TILE_SIZE * PLAYER_SCALE) * 0.5;
+        let half_car = Self::half_car_width();
         let min_x = half_car;
         let max_x = self.screen_width - half_car;
 
@@ -88,28 +92,29 @@ impl Player {
 
     pub fn set_screen_width(&mut self, width: f32) {
         self.screen_width = width;
-        let half_car = (TILE_SIZE * PLAYER_SCALE) * 0.5;
+        let half_car = Self::half_car_width();
         self.position.x = self.position.x.clamp(half_car, width - half_car);
     }
 
+    /// Car strip: frame 0 = hard right, 3 = straight, 6 = hard left.
     pub fn get_player_frame(&self) -> usize {
         if self.speed < 20.0 {
             match self.turn {
-                TurnDirection::Right => 4,
+                TurnDirection::Right => 2,
                 TurnDirection::None => 3,
-                TurnDirection::Left => 2,
+                TurnDirection::Left => 4,
             }
         } else if self.speed < 60.0 {
             match self.turn {
-                TurnDirection::Right => 5,
+                TurnDirection::Right => 1,
                 TurnDirection::None => 3,
-                TurnDirection::Left => 1,
+                TurnDirection::Left => 5,
             }
         } else {
             match self.turn {
-                TurnDirection::Right => 6,
+                TurnDirection::Right => 0,
                 TurnDirection::None => 3,
-                TurnDirection::Left => 0,
+                TurnDirection::Left => 6,
             }
         }
     }
