@@ -1,6 +1,8 @@
 use crate::assets::{CAR_FRAME_HEIGHT, CAR_FRAME_WIDTH};
 use crate::directions::{MoveDirection, TurnDirection};
 use crate::math::Vec2;
+use crate::render::horizon_y;
+use crate::road;
 
 pub const PLAYER_SCALE: f32 = 3.0;
 
@@ -13,6 +15,7 @@ pub struct Player {
     pub turn: TurnDirection,
     pub movement: MoveDirection,
     pub screen_width: f32,
+    pub screen_height: f32,
 }
 
 impl Player {
@@ -22,6 +25,7 @@ impl Player {
         acceleration: f32,
         horizontal_speed: f32,
         screen_width: f32,
+        screen_height: f32,
     ) -> Player {
         Player {
             position,
@@ -32,11 +36,31 @@ impl Player {
             acceleration,
             horizontal_speed,
             screen_width,
+            screen_height,
         }
     }
 
     fn half_car_width() -> f32 {
         CAR_FRAME_WIDTH as f32 * PLAYER_SCALE * 0.5
+    }
+
+    fn lateral_limits(&self) -> (f32, f32) {
+        let horizon = horizon_y(self.screen_height);
+        let (road_min, road_max) = road::lateral_bounds_at_y(
+            self.position.y,
+            self.screen_width,
+            self.screen_height,
+            horizon,
+        );
+        let half_car = Self::half_car_width();
+        let min_x = road_min + half_car;
+        let max_x = road_max - half_car;
+        if min_x >= max_x {
+            let center = self.screen_width * 0.5;
+            (center, center)
+        } else {
+            (min_x, max_x)
+        }
     }
 
     pub fn update_player(&mut self, dt: f32) {
@@ -67,9 +91,7 @@ impl Player {
             }
         }
 
-        let half_car = Self::half_car_width();
-        let min_x = half_car;
-        let max_x = self.screen_width - half_car;
+        let (min_x, max_x) = self.lateral_limits();
 
         if self.speed > 0.0 {
             match self.turn {
@@ -88,12 +110,17 @@ impl Player {
                 TurnDirection::None => {}
             }
         }
+
+        self.position.x = self.position.x.clamp(min_x, max_x);
     }
 
-    pub fn set_screen_width(&mut self, width: f32) {
+    pub fn set_screen_size(&mut self, width: f32, height: f32) {
         self.screen_width = width;
-        let half_car = Self::half_car_width();
-        self.position.x = self.position.x.clamp(half_car, width - half_car);
+        self.screen_height = height;
+        let horizon = horizon_y(height);
+        self.position.y = road::default_car_y(height, horizon);
+        let (min_x, max_x) = self.lateral_limits();
+        self.position.x = self.position.x.clamp(min_x, max_x);
     }
 
     /// Car strip: frame 0 = hard right, 3 = straight, 6 = hard left.

@@ -9,21 +9,21 @@ mod road;
 use assets::{Assets, Biome};
 use directions::{MoveDirection, TurnDirection};
 use glow::HasContext;
-use graphics::Renderer;
 use glutin::config::{Config, ConfigTemplateBuilder, GlConfig};
 use glutin::context::{ContextApi, ContextAttributesBuilder, NotCurrentContext, Version};
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::{Surface, SwapInterval, WindowSurface};
 use glutin_winit::{DisplayBuilder, GlWindow};
+use graphics::Renderer;
 use player::Player;
-use winit::raw_window_handle::HasWindowHandle;
 use std::num::NonZeroU32;
 use std::time::Instant;
 use winit::application::ApplicationHandler;
 use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::raw_window_handle::HasWindowHandle;
 use winit::window::{Window, WindowId};
 
 const SCREEN_WIDTH: f32 = 1280.0;
@@ -104,8 +104,7 @@ impl App {
                 SCREEN_WIDTH as u32,
                 SCREEN_HEIGHT as u32,
             ));
-        let display_builder =
-            DisplayBuilder::new().with_window_attributes(Some(window_attributes));
+        let display_builder = DisplayBuilder::new().with_window_attributes(Some(window_attributes));
 
         Self {
             template,
@@ -140,10 +139,8 @@ impl App {
         };
 
         let gl_context = gl_context.make_current(&gl_surface).unwrap();
-        let _ = gl_surface.set_swap_interval(
-            &gl_context,
-            SwapInterval::Wait(NonZeroU32::new(1).unwrap()),
-        );
+        let _ = gl_surface
+            .set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()));
 
         let gl = unsafe {
             glow::Context::from_loader_function(|symbol| {
@@ -158,12 +155,15 @@ impl App {
 
         let renderer = unsafe { Renderer::new(&gl, width, height) };
         let assets = unsafe { Assets::load(&gl) };
+        let horizon = render::horizon_y(height);
+        let car_y = road::default_car_y(height, horizon);
         let player = Player::new(
-            math::Vec2::new(width / 2.0, height / 1.3),
+            math::Vec2::new(width / 2.0, car_y),
             200.0,
             360.0,
             240.0,
             width,
+            height,
         );
 
         self.window = Some(window);
@@ -258,7 +258,9 @@ impl ApplicationHandler for App {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) if size.width > 0 && size.height > 0 => {
                 if let Some(gl_state) = &mut self.gl_state {
-                    gl_state.renderer.resize(size.width as f32, size.height as f32);
+                    gl_state
+                        .renderer
+                        .resize(size.width as f32, size.height as f32);
                     gl_state.surface.resize(
                         &gl_state.context,
                         NonZeroU32::new(size.width).unwrap(),
@@ -271,7 +273,7 @@ impl ApplicationHandler for App {
                     }
                 }
                 if let Some(player) = &mut self.player {
-                    player.set_screen_width(size.width as f32);
+                    player.set_screen_size(size.width as f32, size.height as f32);
                 }
             }
             WindowEvent::KeyboardInput { event, .. } => {

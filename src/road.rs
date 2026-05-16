@@ -36,11 +36,52 @@ fn depth_to_screen_y(depth: f32, horizon: f32, ground_h: f32) -> f32 {
 }
 
 /// Road half-width on screen at this depth (for clip bounds).
-fn depth_to_half_width(depth: f32, screen_w: f32) -> f32 {
+pub fn depth_to_half_width(depth: f32, screen_w: f32) -> f32 {
     let z_near = depth_to_z(1.0);
     let z = depth_to_z(depth);
     let scale = (z_near / z).clamp(0.02, 1.0);
     screen_w * 0.5 * scale
+}
+
+/// How much of the asphalt band the car may use (centered on screen).
+pub const DRIVABLE_ROAD_FRAC: f32 = 0.55;
+
+/// Inverse of [`depth_to_screen_y`]: screen Y below horizon → depth [0=far, 1=near].
+pub fn screen_y_to_depth(screen_y: f32, horizon: f32, ground_h: f32) -> f32 {
+    if ground_h <= 0.0 {
+        return 1.0;
+    }
+    let t = ((screen_y - horizon) / ground_h).clamp(0.0, 1.0);
+    let z_near = depth_to_z(1.0);
+    let z_far = depth_to_z(0.0);
+    let inv_near = 1.0 / z_near;
+    let inv_far = 1.0 / z_far;
+    let inv_z = inv_far + t * (inv_near - inv_far);
+    let z = 1.0 / inv_z.max(0.001);
+    let d = 1.0 - (z - z_near) / (z_far - z_near);
+    d.clamp(0.0, 1.0)
+}
+
+/// Drivable X range for the car center at a given screen Y (matches road width there).
+pub fn lateral_bounds_at_y(
+    screen_y: f32,
+    screen_w: f32,
+    screen_h: f32,
+    horizon: f32,
+) -> (f32, f32) {
+    let ground_h = screen_h - horizon;
+    let depth = screen_y_to_depth(screen_y, horizon, ground_h);
+    let half_road = depth_to_half_width(depth, screen_w);
+    let asphalt_frac = ROAD_TEX_INNER_HI - ROAD_TEX_INNER_LO;
+    let drivable_half = half_road * asphalt_frac * DRIVABLE_ROAD_FRAC;
+    let center = screen_w * 0.5;
+    (center - drivable_half, center + drivable_half)
+}
+
+/// Default car Y: near the bottom of the road band.
+pub fn default_car_y(screen_h: f32, horizon: f32) -> f32 {
+    let ground_h = screen_h - horizon;
+    horizon + ground_h / 1.5
 }
 
 fn screen_clip_bounds(half_w: f32, screen_w: f32, center_x: f32) -> (f32, f32) {
